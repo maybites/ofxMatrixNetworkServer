@@ -169,6 +169,8 @@ public:
     ofxMatrixNetworkServer();
     virtual ~ofxMatrixNetworkServer();
 
+    void exit();
+
     void sendFrame(const ofPixelsRef pixels);
     void sendText(const string& txt);
     double getLastSent() const;
