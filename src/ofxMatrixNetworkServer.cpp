@@ -12,11 +12,80 @@ ofxMatrixNetworkServer::~ofxMatrixNetworkServer()
 }
 
 //--------------------------------------------------------------
+void ofxMatrixNetworkServer::update() {
+    //for each client lets send them a message letting them know what port they are connected on
+	for(int i = 0; i < getLastID(); i++){
+		if(isClientConnected(i)){
+            //if we don't have a string allocated yet: lets create one
+            //if(i >= storeText.size() ){
+            //    storeText.push_back( string() );
+            //}
+            
+            //if we don't have a string allocated yet: lets create one
+            if(i >= tx_valid.size() ){
+                tx_valid.push_back(0);
+            }
+            
+            //we only want to update the text we have recieved there is data
+            string str = receive(i);
+            
+            if(str == "handshake"){
+                ofLog(OF_LOG_NOTICE, "handshake with client " + ofToString(i));
+                sendHandshake(i);
+                tx_valid[i] = 1;
+            }
+            
+            //if(str.length() > 0){
+            //    storeText[i] = str;
+            //}
+        }else{
+            tx_valid[i] = 0;
+        }
+	}
+}
+
+//--------------------------------------------------------------
+void ofxMatrixNetworkServer::draw(int xRefPos, int yRefPos){
+    
+	ofSetHexColor(0xDDDDDD);
+	ofDrawBitmapString("Matrix SERVER connect on port: "+ofToString(getPort()), xRefPos, yRefPos);
+    
+	//ofSetHexColor(0x000000);
+	//ofRect(10, 60, ofGetWidth()-24, ofGetHeight() - 65 - 15);
+    
+	ofSetHexColor(0xDDDDDD);
+    
+	//for each connected client lets get the data being sent and lets print it to the screen
+	for(unsigned int i = 0; i < (unsigned int)getLastID(); i++){
+        
+		if( !isClientConnected(i) )continue;
+        
+		//give each client its own color
+		ofSetColor(255 - i*30, 255 - i * 20, 100 + i*40);
+        
+		//calculate where to draw the text
+		int xPos = xRefPos + 5;
+		int yPos = yRefPos + 15 + (12 * i * 4);
+        
+		//get the ip and port of the client
+		string port = ofToString( getClientPort(i) );
+		string ip   = getClientIP(i);
+		string info = "client "+ofToString(i)+" -connected from "+ip+" on port: "+port;
+        
+		//draw the info text and the received text bellow it
+		ofDrawBitmapString(info, xPos, yPos);
+		//ofDrawBitmapString(storeText[i], 25, yPos + 10);
+        
+	}
+    
+}
+
+//--------------------------------------------------------------
 void ofxMatrixNetworkServer::exit() {
     //for each client lets send them a message letting them know what port they are connected on
 	for(int i = 0; i < getLastID(); i++){
 		if(isClientConnected(i)){
-            send(i, "serverexit");
+            sendExit(i);
             disconnectClient(i);
         }
 	}
@@ -24,35 +93,65 @@ void ofxMatrixNetworkServer::exit() {
     close();
 }
 
+
 //------------------------------------------------------------------------------
 void ofxMatrixNetworkServer::sendFrame(const ofPixelsRef pixels)
 {
 	//for each connected client lets get the data being sent and lets print it to the screen
 	for(unsigned int i = 0; i < (unsigned int)getLastID(); i++){
         
-		if( !isClientConnected(i) )continue;
+		if(isClientConnected(i) && tx_valid[i] == 1){
+            tx_valid[i] = 0;
+           
+            int planecount = pixels.getNumChannels();
+            int dimcount = 2; // only sending 2d matrices from of
+            int dim[dimcount];
+            dim[0]       = pixels.getWidth();
+            dim[1]       = pixels.getHeight();
+            int typeSize = pixels.getBytesPerChannel();
+            int type     = JIT_MATRIX_TYPE_CHAR;
 
-        int planecount = pixels.getNumChannels();
-        int dimcount = 2; // only sending 2d matrices from of
-        int dim[dimcount];
-        dim[0]       = pixels.getWidth();
-        dim[1]       = pixels.getHeight();
-        int typeSize = pixels.getBytesPerChannel();
-        int type     = JIT_MATRIX_TYPE_CHAR;
+            makeMatrixHeader(planecount, typeSize, type, dim, dimcount);
 
-        makeMatrixHeader(planecount, typeSize, type, dim, dimcount);
-
-        char *matrix = (char*)pixels.getPixels();
-        
-        //////SEND ONE MATRIX
-        sendRawBytes(i, (char *)(&m_chunkHeader), sizeof(t_jit_net_packet_header));
-        sendRawBytes(i, (char *)(&m_matrixHeader), sizeof(t_jit_net_packet_matrix));
-        
-        int packSize = SWAP32(m_matrixHeader.dimstride[SWAP32(m_matrixHeader.dimcount)-1])
-                    * SWAP32(m_matrixHeader.dim[SWAP32(m_matrixHeader.dimcount)-1]);
-
-        sendRawBytes(i, matrix, packSize);
+            char *matrix = (char*)pixels.getPixels();
+            
+            
+            //////SEND ONE MATRIX
+            sendRawBytes(i, (char *)(&m_chunkHeader), sizeof(t_jit_net_packet_header));
+            sendRawBytes(i, (char *)(&m_matrixHeader), sizeof(t_jit_net_packet_matrix));
+            
+            //DELETE THIS LINE
+            int packSize = SWAP32(m_matrixHeader.dimstride[dimcount-1])*SWAP32(m_matrixHeader.dim[dimcount-1]);
+            
+            ofLog(OF_LOG_NOTICE, "send frame to client with nof bytes: " + ofToString(packSize));
+            int vector = dim[0] * typeSize * planecount;
+            for(int j = 0; j < dim[1]; j++){
+                sendRawBytes(i, matrix + j * vector, vector);
+            }
+        }
     }
+}
+
+//------------------------------------------------------------------------------
+void ofxMatrixNetworkServer::sendHandshake(int i)
+{
+    //////SEND HANDSHAKE
+    
+    m_chunkHeader.id = SWAP32(JIT_MESSAGE_HANDSHAKE_ID);
+    m_chunkHeader.size = 0;
+    
+    sendRawBytes(i, (char *)(&m_chunkHeader), sizeof(t_jit_net_packet_header));
+}
+
+//------------------------------------------------------------------------------
+void ofxMatrixNetworkServer::sendExit(int i)
+{
+    //////SEND HANDSHAKE
+    
+    m_chunkHeader.id = SWAP32(JIT_MESSAGE_EXIT_ID);
+    m_chunkHeader.size = 0;
+    
+    sendRawBytes(i, (char *)(&m_chunkHeader), sizeof(t_jit_net_packet_header));
 }
 
 //------------------------------------------------------------------------------
@@ -150,10 +249,10 @@ void ofxMatrixNetworkServer::makeMatrixHeader(int planecount,
 {
     long i, j, k;
     
-    m_chunkHeader.id = SWAP32(JIT_MATRIX_PACKET_ID);
-    m_chunkHeader.size = sizeof(t_jit_net_packet_matrix);
+    m_chunkHeader.id = SWAP32(JIT_MESSAGE_PACKET_ID);
+    m_chunkHeader.size = SWAP32(sizeof(t_jit_net_packet_matrix));
     
-    m_matrixHeader.id = JIT_MATRIX_PACKET_ID;
+    m_matrixHeader.id = SWAP32(JIT_MATRIX_PACKET_ID);
     m_matrixHeader.size = SWAP32(sizeof(t_jit_net_packet_matrix));
     m_matrixHeader.planecount = SWAP32(planecount);
     m_matrixHeader.type = SWAP32(type);
@@ -183,7 +282,7 @@ void ofxMatrixNetworkServer::makeMatrixHeader(int planecount,
         m_matrixHeader.dimstride[i] = SWAP32(0);
         i++;
     }
-    
+
     m_matrixHeader.datasize = SWAP32(SWAP32(m_matrixHeader.dimstride[dimcount-1])*SWAP32(m_matrixHeader.dim[dimcount-1]));
     m_matrixHeader.time = ofGetElapsedTimef();
 
@@ -191,3 +290,5 @@ void ofxMatrixNetworkServer::makeMatrixHeader(int planecount,
     lastSent = m_matrixHeader.time;
 
 }
+
+

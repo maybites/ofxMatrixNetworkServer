@@ -25,7 +25,7 @@
 
 #pragma once
 
-
+#include "ofMain.h"
 #include "ofxNetwork.h"
 #include "ofPixels.h"
 
@@ -56,6 +56,8 @@
 #define JIT_MATRIX_PACKET_ID  'JMTX'
 #define JIT_MATRIX_LATENCY_PACKET_ID  'JMLP'
 #define JIT_MESSAGE_PACKET_ID  'JMMP'
+#define JIT_MESSAGE_HANDSHAKE_ID  'JMHS'
+#define JIT_MESSAGE_EXIT_ID  'JMEX'
 
 //This chunk header could be represented in C by the following struct:
 typedef struct _jit_net_packet_header {
@@ -169,10 +171,14 @@ public:
     ofxMatrixNetworkServer();
     virtual ~ofxMatrixNetworkServer();
 
+    void update();
+    void draw(int xRefPos, int yRefPos);
     void exit();
 
     void sendFrame(const ofPixelsRef pixels);
     void sendText(const string& txt);
+    void sendHandshake(int i);
+    void sendExit(int i);
     double getLastSent() const;
 
 protected: 
@@ -185,7 +191,9 @@ protected:
                           int dimcount);
     
 	double lastSent;
-    
+    vector <string> storeText;
+    vector <int> tx_valid;
+  
     t_jit_net_packet_header  m_chunkHeader;
     t_jit_net_packet_matrix  m_matrixHeader;
     t_jit_net_packet_latency m_latencyPacket;
