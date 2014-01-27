@@ -129,8 +129,8 @@ void ofxMatrixNetworkServer::sendFrame(const ofPixelsRef pixels)
             
             ofLog(OF_LOG_NOTICE, "send frame to client: " + ofToString(i));
             int vector = dim[0] * typeSize * planecount;
-            for(int j = 0; j < dim[1]; j++){
-                sendRawBytes(i, matrix + j * vector, vector);
+            for(int j = 0; j < dim[1]/4; j++){
+                sendRawBytes(i, matrix + j * vector * 4, vector * 4);
             }
         }
     }
