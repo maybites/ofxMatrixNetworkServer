@@ -36,7 +36,12 @@ void ofxMatrixNetworkServer::update() {
             }
             
             if(str == "nextframe"){
-                tx_valid[i] = 2;
+                tx_valid[i] = 1;
+            }
+            
+            if(str == "disconnect"){
+                ofLog(OF_LOG_NOTICE, "disconnect client " + ofToString(i));
+                disconnectClient(i);
             }
             
             //if(str.length() > 0){
@@ -104,8 +109,8 @@ void ofxMatrixNetworkServer::sendFrame(const ofPixelsRef pixels)
 	//for each connected client lets get the data being sent and lets print it to the screen
 	for(unsigned int i = 0; i < (unsigned int)getLastID(); i++){
         
-		if(isClientConnected(i) && tx_valid[i] == 2){
-            tx_valid[i] = 1;
+		if(isClientConnected(i) && tx_valid[i] == 1){
+            tx_valid[i] = 0;
            
             int planecount = pixels.getNumChannels();
             int dimcount = 2; // only sending 2d matrices from of
@@ -127,10 +132,10 @@ void ofxMatrixNetworkServer::sendFrame(const ofPixelsRef pixels)
             //DELETE THIS LINE
             int packSize = SWAP32(m_matrixHeader.dimstride[dimcount-1])*SWAP32(m_matrixHeader.dim[dimcount-1]);
             
-            ofLog(OF_LOG_NOTICE, "send frame to client: " + ofToString(i));
+            //ofLog(OF_LOG_NOTICE, "send frame to client: " + ofToString(i));
             int vector = dim[0] * typeSize * planecount;
-            for(int j = 0; j < dim[1]/4; j++){
-                sendRawBytes(i, matrix + j * vector * 4, vector * 4);
+            for(int j = 0; j < dim[1]; j++){
+                sendRawBytes(i, matrix + j * vector, vector);
             }
         }
     }
