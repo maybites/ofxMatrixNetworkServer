@@ -32,16 +32,15 @@ void ofxMatrixNetworkServer::update() {
             if(str == "handshake"){
                 ofLog(OF_LOG_NOTICE, "handshake with client " + ofToString(i));
                 sendHandshake(i);
-                tx_valid[i] = 2;
-            }
-            
-            if(str == "nextframe"){
                 tx_valid[i] = 1;
-            }
-            
-            if(str == "disconnect"){
+            }else if(str == "nextframe"){
+                //ofLog(OF_LOG_NOTICE, "nextframe for client " + ofToString(i));
+                tx_valid[i] = 2;
+            }else if(str == "disconnect"){
                 ofLog(OF_LOG_NOTICE, "disconnect client " + ofToString(i));
+                sendDisconnect(i);
                 disconnectClient(i);
+                tx_valid[i] = 0;
             }
             
             //if(str.length() > 0){
@@ -109,8 +108,8 @@ void ofxMatrixNetworkServer::sendFrame(const ofPixelsRef pixels)
 	//for each connected client lets get the data being sent and lets print it to the screen
 	for(unsigned int i = 0; i < (unsigned int)getLastID(); i++){
         
-		if(isClientConnected(i) && tx_valid[i] == 1){
-            tx_valid[i] = 0;
+		if(isClientConnected(i) && tx_valid[i] == 2){
+            tx_valid[i] = 1;
            
             int planecount = pixels.getNumChannels();
             int dimcount = 2; // only sending 2d matrices from of
@@ -158,6 +157,17 @@ void ofxMatrixNetworkServer::sendExit(int i)
     //////SEND HANDSHAKE
     
     m_chunkHeader.id = SWAP32(JIT_MESSAGE_EXIT_ID);
+    m_chunkHeader.size = 0;
+    
+    sendRawBytes(i, (char *)(&m_chunkHeader), sizeof(t_jit_net_packet_header));
+}
+
+//------------------------------------------------------------------------------
+void ofxMatrixNetworkServer::sendDisconnect(int i)
+{
+    //////SEND HANDSHAKE
+    
+    m_chunkHeader.id = SWAP32(JIT_MESSAGE_DISCONNECT_ID);
     m_chunkHeader.size = 0;
     
     sendRawBytes(i, (char *)(&m_chunkHeader), sizeof(t_jit_net_packet_header));

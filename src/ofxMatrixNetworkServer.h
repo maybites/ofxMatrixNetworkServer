@@ -58,6 +58,7 @@
 #define JIT_MESSAGE_PACKET_ID  'JMMP'
 #define JIT_MESSAGE_HANDSHAKE_ID  'JMHS'
 #define JIT_MESSAGE_EXIT_ID  'JMEX'
+#define JIT_MESSAGE_DISCONNECT_ID  'JMDC'
 
 //This chunk header could be represented in C by the following struct:
 typedef struct _jit_net_packet_header {
@@ -179,6 +180,7 @@ public:
     void sendText(const string& txt);
     void sendHandshake(int i);
     void sendExit(int i);
+    void sendDisconnect(int i);
     double getLastSent() const;
 
 protected: 
