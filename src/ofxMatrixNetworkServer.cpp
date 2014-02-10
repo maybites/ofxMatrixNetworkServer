@@ -33,8 +33,8 @@ void ofxMatrixNetworkServer::update() {
                 ofLog(OF_LOG_NOTICE, "handshake with client " + ofToString(i));
                 sendHandshake(i);
                 tx_valid[i] = 1;
-            }else if(str == "nextframe"){
-                //ofLog(OF_LOG_NOTICE, "nextframe for client " + ofToString(i));
+            }else if(str.find_first_of("nextframe") != -1){
+                ofLog(OF_LOG_NOTICE, "nextframe for client " + ofToString(i) + " - " + str);
                 tx_valid[i] = 2;
             }else if(str == "disconnect"){
                 ofLog(OF_LOG_NOTICE, "disconnect client " + ofToString(i));
