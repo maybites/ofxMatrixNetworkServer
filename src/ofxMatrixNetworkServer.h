@@ -49,9 +49,10 @@
 #define JIT_MATRIX_MAX_PLANECOUNT	32 			///< maximum plane count
 
 #define JIT_MATRIX_TYPE_CHAR 0;
-#define JIT_MATRIX_TYPE_LONG 1;
-#define JIT_MATRIX_TYPE_FLOAT32 2;
-#define JIT_MATRIX_TYPE_FLOAT64 3;
+#define JIT_MATRIX_TYPE_SHORT 1;
+#define JIT_MATRIX_TYPE_LONG 2;
+#define JIT_MATRIX_TYPE_FLOAT32 3;
+#define JIT_MATRIX_TYPE_FLOAT64 4;
 
 #define JIT_MATRIX_PACKET_ID  'JMTX'
 #define JIT_MATRIX_LATENCY_PACKET_ID  'JMLP'
@@ -176,6 +177,8 @@ public:
     void draw(int xRefPos, int yRefPos);
     void exit();
 
+    void sendFrame(const ofFloatPixelsRef pixels);
+    void sendFrame(const ofShortPixelsRef pixels);
     void sendFrame(const ofPixelsRef pixels);
     void sendText(const string& txt);
     void sendHandshake(int i);

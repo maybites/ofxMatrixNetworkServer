@@ -34,7 +34,7 @@ void ofxMatrixNetworkServer::update() {
                 sendHandshake(i);
                 tx_valid[i] = 1;
             }else if(str.find_first_of("nextframe") != -1){
-                ofLog(OF_LOG_NOTICE, "nextframe for client " + ofToString(i) + " - " + str);
+                //ofLog(OF_LOG_NOTICE, "nextframe for client " + ofToString(i) + " - " + str);
                 tx_valid[i] = 2;
             }else if(str == "disconnect"){
                 ofLog(OF_LOG_NOTICE, "disconnect client " + ofToString(i));
@@ -110,7 +110,7 @@ void ofxMatrixNetworkServer::sendFrame(const ofPixelsRef pixels)
         
 		if(isClientConnected(i) && tx_valid[i] == 2){
             tx_valid[i] = 1;
-           
+            
             int planecount = pixels.getNumChannels();
             int dimcount = 2; // only sending 2d matrices from of
             int dim[dimcount];
@@ -118,9 +118,9 @@ void ofxMatrixNetworkServer::sendFrame(const ofPixelsRef pixels)
             dim[1]       = pixels.getHeight();
             int typeSize = pixels.getBytesPerChannel();
             int type     = JIT_MATRIX_TYPE_CHAR;
-
+            
             makeMatrixHeader(planecount, typeSize, type, dim, dimcount);
-
+            
             char *matrix = (char*)pixels.getPixels();
             
             
@@ -129,7 +129,83 @@ void ofxMatrixNetworkServer::sendFrame(const ofPixelsRef pixels)
             sendRawBytes(i, (char *)(&m_matrixHeader), sizeof(t_jit_net_packet_matrix));
             
             //DELETE THIS LINE
-            int packSize = SWAP32(m_matrixHeader.dimstride[dimcount-1])*SWAP32(m_matrixHeader.dim[dimcount-1]);
+            //int packSize = SWAP32(m_matrixHeader.dimstride[dimcount-1])*SWAP32(m_matrixHeader.dim[dimcount-1]);
+            
+            //ofLog(OF_LOG_NOTICE, "send frame to client: " + ofToString(i));
+            int vector = dim[0] * typeSize * planecount;
+            for(int j = 0; j < dim[1]; j++){
+                sendRawBytes(i, matrix + j * vector, vector);
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+void ofxMatrixNetworkServer::sendFrame(const ofShortPixelsRef pixels)
+{
+	//for each connected client lets get the data being sent and lets print it to the screen
+	for(unsigned int i = 0; i < (unsigned int)getLastID(); i++){
+        
+		if(isClientConnected(i) && tx_valid[i] == 2){
+            tx_valid[i] = 1;
+            
+            int planecount = pixels.getNumChannels();
+            int dimcount = 2; // only sending 2d matrices from of
+            int dim[dimcount];
+            dim[0]       = pixels.getWidth();
+            dim[1]       = pixels.getHeight();
+            int typeSize = pixels.getBytesPerChannel();
+            int type     = JIT_MATRIX_TYPE_SHORT;
+            
+            makeMatrixHeader(planecount, typeSize, type, dim, dimcount);
+            
+            char *matrix = (char*)pixels.getPixels();
+            
+            
+            //////SEND ONE MATRIX
+            sendRawBytes(i, (char *)(&m_chunkHeader), sizeof(t_jit_net_packet_header));
+            sendRawBytes(i, (char *)(&m_matrixHeader), sizeof(t_jit_net_packet_matrix));
+            
+            //DELETE THIS LINE
+            //int packSize = SWAP32(m_matrixHeader.dimstride[dimcount-1])*SWAP32(m_matrixHeader.dim[dimcount-1]);
+            
+            //ofLog(OF_LOG_NOTICE, "send frame to client: " + ofToString(i));
+            int vector = dim[0] * typeSize * planecount;
+            for(int j = 0; j < dim[1]; j++){
+                sendRawBytes(i, matrix + j * vector, vector);
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+void ofxMatrixNetworkServer::sendFrame(const ofFloatPixelsRef pixels)
+{
+	//for each connected client lets get the data being sent and lets print it to the screen
+	for(unsigned int i = 0; i < (unsigned int)getLastID(); i++){
+        
+		if(isClientConnected(i) && tx_valid[i] == 2){
+            tx_valid[i] = 1;
+            
+            int planecount = pixels.getNumChannels();
+            int dimcount = 2; // only sending 2d matrices from of
+            int dim[dimcount];
+            dim[0]       = pixels.getWidth();
+            dim[1]       = pixels.getHeight();
+            int typeSize = pixels.getBytesPerChannel();
+            int type     = JIT_MATRIX_TYPE_FLOAT32;
+            
+            makeMatrixHeader(planecount, typeSize, type, dim, dimcount);
+            
+            char *matrix = (char*)pixels.getPixels();
+            
+            
+            //////SEND ONE MATRIX
+            sendRawBytes(i, (char *)(&m_chunkHeader), sizeof(t_jit_net_packet_header));
+            sendRawBytes(i, (char *)(&m_matrixHeader), sizeof(t_jit_net_packet_matrix));
+            
+            //DELETE THIS LINE
+            //int packSize = SWAP32(m_matrixHeader.dimstride[dimcount-1])*SWAP32(m_matrixHeader.dim[dimcount-1]);
             
             //ofLog(OF_LOG_NOTICE, "send frame to client: " + ofToString(i));
             int vector = dim[0] * typeSize * planecount;
