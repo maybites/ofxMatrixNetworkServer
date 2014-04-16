@@ -22,7 +22,10 @@ Description
 
 It allows users to send video frames from openFrameworks.
 
-You may be better off using [ofxSyphon](https://github.com/astellato/ofxSyphon) to share video frames and OSC to send messages back and forth.  But, if you need to use [jit.net.send]/[jit.net.recv] then this is your addon.
+You may be better off using [ofxSyphon](https://github.com/astellato/ofxSyphon) to share video frames and OSC to send messages back and forth. 
+
+About Openframeworks
+--------------------
 
 OpenFrameworks is a cross platform open source toolkit for creative coding in C++.
 
@@ -30,4 +33,6 @@ OpenFrameworks is a cross platform open source toolkit for creative coding in C+
 
 Use
 ---
+
+Maybe sometime I will paste the maxmsp-java-external for receiving the data aswell
 
